@@ -36,34 +36,21 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+(function() {
+    // NEU: Alte globale Event-Listener aufräumen, bevor neue geladen werden
+    if (window._ncZoomCleanup) { window._ncZoomCleanup(); }
+
     const container = document.getElementById('zoom-container');
     const img = document.getElementById('zoom-image');
-    
     if (!container || !img) return;
 
-    let scale = 1;
-    let pointX = 0;
-    let pointY = 0;
-    let start = { x: 0, y: 0 };
-    let panning = false;
+    let scale = 1; let pointX = 0; let pointY = 0; let start = { x: 0, y: 0 }; let panning = false;
 
-    // 1. BOUNDARY MATH
     function clamp() {
-        // Prevent zooming out smaller than the original image
-        if (scale <= 1) {
-            scale = 1;
-            pointX = 0;
-            pointY = 0;
-            return;
-        }
-        
-        // Prevent dragging the image completely off-screen
+        if (scale <= 1) { scale = 1; pointX = 0; pointY = 0; return; }
         const rect = container.getBoundingClientRect();
-        // Calculate max allowed panning based on current scale
         const maxX = (rect.width * scale - rect.width) / 2;
         const maxY = (rect.height * scale - rect.height) / 2;
-        
         pointX = Math.min(Math.max(pointX, -maxX), maxX);
         pointY = Math.min(Math.max(pointY, -maxY), maxY);
     }
@@ -73,75 +60,57 @@ document.addEventListener("DOMContentLoaded", function() {
         img.style.transform = `translate(${pointX}px, ${pointY}px) scale(${scale})`;
     }
 
-    // 2. MOUSE WHEEL ZOOMING (Fixed mouse targeting)
-    container.addEventListener('wheel', function (e) {
+    // Event Handler Variablen definieren
+    const wheelHandler = function (e) {
         e.preventDefault();
-        
         const rect = container.getBoundingClientRect();
-        
-        // Calculate mouse position relative to the CENTER of the container
         const mouseX = e.clientX - rect.left - (rect.width / 2);
         const mouseY = e.clientY - rect.top - (rect.height / 2);
-        
-        // Determine zoom direction
         const zoomModifier = (e.deltaY < 0) ? 1.15 : (1 / 1.15);
-        const newScale = Math.max(1, Math.min(scale * zoomModifier, 10)); // Clamp between 1x and 10x
-        
+        const newScale = Math.max(1, Math.min(scale * zoomModifier, 10));
         const ratio = newScale / scale;
-        
-        // Adjust translation to keep the pixel under the mouse locked in place
         pointX = mouseX - (mouseX - pointX) * ratio;
         pointY = mouseY - (mouseY - pointY) * ratio;
-        
         scale = newScale;
         setTransform();
-    }, { passive: false });
+    };
 
-    // 3. CLICK & DRAG PANNING (Fixed edge cases)
-    container.addEventListener('mousedown', function (e) {
+    const mouseDownHandler = function (e) {
         e.preventDefault();
-        if (scale > 1) { // Only allow dragging if zoomed in
-            start = { x: e.clientX - pointX, y: e.clientY - pointY };
-            panning = true;
-        }
-    });
+        if (scale > 1) { start = { x: e.clientX - pointX, y: e.clientY - pointY }; panning = true; }
+    };
 
-    // Use window so panning doesn't abruptly stop if the mouse leaves the container
-    window.addEventListener('mouseup', function () {
-        panning = false;
-    });
-
-    window.addEventListener('mousemove', function (e) {
+    const mouseUpHandler = function () { panning = false; };
+    const mouseMoveHandler = function (e) {
         if (!panning) return;
         e.preventDefault();
         pointX = e.clientX - start.x;
         pointY = e.clientY - start.y;
         setTransform();
-    });
+    };
 
-    // 4. BUTTON CONTROLS
+    // Events anhängen
+    container.addEventListener('wheel', wheelHandler, { passive: false });
+    container.addEventListener('mousedown', mouseDownHandler);
+    window.addEventListener('mouseup', mouseUpHandler);
+    window.addEventListener('mousemove', mouseMoveHandler);
+
+    // NEU: Cleanup-Funktion global speichern für den nächsten HTMX-Ladevorgang
+    window._ncZoomCleanup = function() {
+        window.removeEventListener('mouseup', mouseUpHandler);
+        window.removeEventListener('mousemove', mouseMoveHandler);
+    };
+
     window.zoomImage = function(direction) {
         const modifier = (direction > 0) ? 1.25 : (1 / 1.25);
         scale = Math.max(1, Math.min(scale * modifier, 10));
-        
-        // When using buttons, zoom perfectly into the center
-        if (scale === 1) {
-            pointX = 0;
-            pointY = 0;
-        } else {
-            // Keep current panning center if already zoomed
-            pointX *= modifier;
-            pointY *= modifier;
-        }
-        
+        if (scale === 1) { pointX = 0; pointY = 0; } 
+        else { pointX *= modifier; pointY *= modifier; }
         setTransform();
     }
 
     window.resetZoom = function() {
-        scale = 1;
-        pointX = 0;
-        pointY = 0;
-        setTransform();
+        scale = 1; pointX = 0; pointY = 0; setTransform();
     }
-});
+})();
 </script>

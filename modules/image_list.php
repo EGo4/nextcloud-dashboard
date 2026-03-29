@@ -92,7 +92,7 @@ if ($currentFolder) {
                    class="img-card group relative block w-full h-32 sm:h-40 rounded-xl overflow-hidden border-2 transition <?= $isImgSelected ? 'border-brand-dark shadow-lg ring-2 ring-brand-dark ring-offset-2' : 'border-gray-100 hover:border-brand-dark hover:shadow-md' ?>">
                     
                     <div class="img-wrap absolute inset-0 w-full h-full bg-gray-100 border-r border-transparent">
-                        <img src="image.php?path=<?= urlencode($img['path']) ?>&thumb=1" loading="lazy" alt="<?= htmlspecialchars($img['name']) ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
+                        <img src="image.php?path=<?= urlencode($img['path']) ?>&thumb=1" loading="lazy" decoding="async" alt="<?= htmlspecialchars($img['name']) ?>" class="w-full h-full object-cover group-hover:scale-110 transition duration-300">
                     </div>
                     
                     <div class="img-title absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 text-[10px] text-white truncate font-medium z-10">
@@ -124,8 +124,8 @@ if ($currentFolder) {
         localStorage.setItem('nc_gallery_view', view);
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
-        const savedView = localStorage.getItem('nc_gallery_view') || 'grid';
-        setGalleryView(savedView);
-    });
+    (function() {
+            const savedView = localStorage.getItem('nc_gallery_view') || 'grid';
+            setGalleryView(savedView);
+        })();
 </script>

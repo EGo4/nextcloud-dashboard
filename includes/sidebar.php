@@ -17,7 +17,7 @@
             <span class="text-xs text-gray-400 font-semibold uppercase tracking-wider opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Main Menu</span>
         </div>
         
-        <nav class="flex-1 space-y-3 px-3">
+        <nav class="flex-1 space-y-3 px-3" hx-boost="true" hx-target="main" hx-select="main" hx-swap="outerHTML">
             <a href="#" class="flex items-center bg-white text-brand-dark px-3 py-3 rounded-xl font-medium shadow-sm transition whitespace-nowrap overflow-hidden">
                 <i class="fas fa-home w-8 text-xl text-center flex-shrink-0"></i>
                 <span class="ml-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Dashboard</span>
