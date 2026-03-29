@@ -1,6 +1,16 @@
 <?php
 require 'config.php';
 
+// --- MAGIE 1: SESSION-SPERRE AUFHEBEN ---
+// Das erlaubt PHP, hunderte Bilder absolut gleichzeitig zu laden!
+session_write_close();
+
+// Schutz-Logik
+if (!defined('NC_USER')) {
+    http_response_code(401); // Unauthorized
+    exit;
+}
+
 if (!isset($_GET['path'])) {
     http_response_code(400);
     exit;
@@ -9,8 +19,8 @@ if (!isset($_GET['path'])) {
 $path = $_GET['path'];
 $isThumb = isset($_GET['thumb']) && $_GET['thumb'] == '1';
 
-// Safely encode the path, keeping slashes intact
-$safePath = implode('/', array_map('rawurlencode', explode('/', $path)));
+$safePath = implode('/', array_map('rawurlencode', explode('/', ltrim($path, '/'))));
+$safePath = '/' . ltrim($safePath, '/');
 
 if ($isThumb) {
     $decodedPath = urldecode($path);
@@ -18,14 +28,13 @@ if ($isThumb) {
     $relativePath = str_replace($prefix, '', $decodedPath);
     $safeRelativePath = implode('/', array_map('rawurlencode', explode('/', ltrim($relativePath, '/'))));
     
-    // URL for Nextcloud's internal thumbnail generator
+    // Thumbnail API
     $url = rtrim(NC_SERVER, '/') . '/index.php/core/preview.png?file=/' . $safeRelativePath . '&x=250&y=250&a=true&mode=cover';
 } else {
-    // URL for the full-resolution WebDAV file
+    // Original WebDAV API
     $url = rtrim(NC_SERVER, '/') . $safePath;
 }
 
-// Helper function to execute the cURL request
 function fetchFromNextcloud($targetUrl) {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, $targetUrl);
@@ -41,22 +50,25 @@ function fetchFromNextcloud($targetUrl) {
     return ['code' => $code, 'data' => $data, 'type' => $type];
 }
 
-// 1. Try to fetch the requested image (Full or Thumb)
 $response = fetchFromNextcloud($url);
 
-// 2. THE FALLBACK: If we asked for a thumbnail but Nextcloud threw an error (like a 404 on shared folders),
-// instantly fall back to fetching the full image via WebDAV so it doesn't break the UI.
-if ($isThumb && $response['code'] !== 200 && $response['code'] !== 201) {
+// --- MAGIE 2: 0-BYTE FALLBACK ---
+// Wenn Nextcloud einen Fehler wirft ODER das Bild leer ist (0 Bytes), lade das echte Bild!
+if ($isThumb && ($response['code'] !== 200 || empty(trim($response['data'])))) {
     $fallbackUrl = rtrim(NC_SERVER, '/') . $safePath;
     $response = fetchFromNextcloud($fallbackUrl);
 }
 
-// 3. Output the final result to the browser
+// Ausgabe an den Browser
 if ($response['code'] === 200 || $response['code'] === 201 || $response['code'] === 207) {
-    $contentType = $response['type'] ?: 'image/png';
+    $contentType = $response['type'] ?: 'image/jpeg';
+    
     header("Content-Type: $contentType");
-    // Tell the browser to cache this so it doesn't re-download it every time you click a comment
     header("Cache-Control: public, max-age=86400");
+    
+    // Löscht alle eventuell aus Versehen generierten Leerzeichen/Fehler aus dem Buffer
+    ob_clean();
+    
     echo $response['data'];
 } else {
     http_response_code($response['code']);

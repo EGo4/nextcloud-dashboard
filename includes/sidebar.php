@@ -40,7 +40,7 @@
         </nav>
 
         <div class="px-3 mt-auto">
-            <a href="#" class="flex items-center text-gray-300 hover:text-white hover:bg-white/10 px-3 py-3 rounded-xl transition whitespace-nowrap overflow-hidden border-t border-white/10">
+            <a href="logout.php" class="flex items-center text-gray-300 hover:text-white hover:bg-white/10 px-3 py-3 rounded-xl transition whitespace-nowrap overflow-hidden border-t border-white/10">
                 <i class="fas fa-sign-out-alt w-8 text-xl text-center flex-shrink-0"></i>
                 <span class="ml-4 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Log Out</span>
             </a>

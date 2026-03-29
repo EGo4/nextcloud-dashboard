@@ -1,4 +1,11 @@
-<?php require 'config.php'; ?>
+<?php 
+require 'config.php'; 
+
+if (!defined('NC_USER')) {
+    header('Location: login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
